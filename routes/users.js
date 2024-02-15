@@ -13,22 +13,22 @@ function checkBody(body, keys) {
 }
 
 router.post("/signup", function (req, res) {
-	const { firstname,secondname, password } = req.body;
+	const { firstname,username, password } = req.body;
 
-	const result = checkBody(req.body, ["firstname", "secondname", "password"]);
+	const result = checkBody(req.body, ["firstname", "username", "password"]);
 	if (!result) return res.json({ result: false, error: "Champs manquants ou vides" });
 
-	User.findOne({ firstname, secondname })
+	User.findOne({ firstname, username })
 		.then((data) => {
 			if (data) return res.json({ result: false, error: "Utilisateur déjà existant" });
 
 			const hashedPassword = bcrypt.hashSync(password, 10);
-			const newUser = new User({ firstname, secondname, password: hashedPassword });
+			const newUser = new User({ firstname, username, password: hashedPassword });
 
 			newUser
 				.save()
 				.then(() => {
-					return res.json({ result: true, user: { firstname: newUser.firstname, secondname: newUser.secondname } });
+					return res.json({ result: true, user: { firstname: newUser.firstname, username: newUser.username } });
 
 				})
 				.catch((e) => {
