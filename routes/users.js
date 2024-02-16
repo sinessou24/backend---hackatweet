@@ -3,64 +3,50 @@ var router = express.Router();
 
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
+const { checkBody } = require('../modules/checkBody');
+const uid2 = require('uid2');
 
-function checkBody(body, keys) {
-	for (const key of keys) {
-		if (!body[key]) return false;
+router.post('/signup', (req, res) => {
+	if (!checkBody(req.body, ['firstname','username', 'password'])) {
+	  res.json({ result: false, error: 'Missing or empty fields' });
+	  return;
 	}
 
-	return true;
-}
+  // Check if the user has not already been registered
+  User.findOne({ username: req.body.username }).then(data => {
+    if (data === null) {
+      const hash = bcrypt.hashSync(req.body.password, 10);
 
-router.post("/signup", function (req, res) {
-	const { firstname,username, password } = req.body;
+      const newUser = new User({
+		    firstname: req.body.firstname,
+        username: req.body.username,
+        password: hash,
+        token: uid2(32),
+      });
 
-	const result = checkBody(req.body, ["firstname", "username", "password"]);
-	if (!result) return res.json({ result: false, error: "Champs manquants ou vides" });
-
-	User.findOne({ firstname, username })
-		.then((data) => {
-			if (data) return res.json({ result: false, error: "Utilisateur déjà existant" });
-
-			const hashedPassword = bcrypt.hashSync(password, 10);
-			const newUser = new User({ firstname, username, password: hashedPassword });
-
-			newUser
-				.save()
-				.then(() => {
-					return res.json({ result: true, user: { firstname: newUser.firstname, username: newUser.username } });
-
-				})
-				.catch((e) => {
-					console.error(e);
-					return res.json({ result: false, error: "Erreur serveur" });
-				});
-		})
-		.catch((e) => {
-			console.error(e);
-			return res.json({ result: false, error: "Erreur serveur" });
-		});
+      newUser.save().then(newDoc => {
+        res.json({ result: true, token: newDoc.token });
+      });
+    } else {
+      // User already exists in database
+      res.json({ result: false, error: 'User already exists' });
+    }
+  });
 });
 
-router.post("/signin", function (req, res) {
-	const { firstname, password } = req.body;
+router.post('/signin', (req, res) => {
+	if (!checkBody(req.body, ['username', 'password'])) {
+	  res.json({ result: false, error: 'Missing or empty fields' });
+	  return;
+	}
 
-	const result = checkBody(req.body, ["firstname", "password"]);
-	if (!result) return res.json({ result: false, error: "Champs manquants ou vides" });
-
-	User.findOne({ firstname })
-		.then((data) => {
-			if (!data) return res.json({ result: false, error: "Utilisateur non existant" });
-
-			const pwdMatch = bcrypt.compareSync(password, data.password);
-			if (!pwdMatch) return res.json({ result: false, error: "Mot de passe incorrect" });
-
-			return res.json({ result: true, user: data.firstname });
-		})
-		.catch((e) => {
-			console.error(e);
-			return res.json({ result: false, error: "Erreur serveur" });
-		});
-});
+	User.findOne({ username: req.body.username }).then(data => {
+		if (data && bcrypt.compareSync(req.body.password, data.password)) {
+		  res.json({ result: true, token: data.token });
+		} else {
+		  res.json({ result: false, error: 'User not found or wrong password' });
+		}
+	  });
+	});
 
 module.exports = router;
