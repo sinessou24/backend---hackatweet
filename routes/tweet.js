@@ -7,7 +7,7 @@ const User = require('../models/users');
 
 router.post('/creatTweet', (req, res) => {
     const message = req.body.message
-const extractH = extract(message);
+// const extractH = extract(message);
 
     User.findOne({ username: req.body.username })
         .then(user => {
@@ -20,7 +20,7 @@ const extractH = extract(message);
                 message: message,
                 likes: 0,
                 user: user._id,
-                hashtag : extractH,
+                // hashtag : extractH,
             });
 
 
@@ -51,17 +51,17 @@ const extractH = extract(message);
 
 
 
-function extract() {
-const hashtagRegex = /#(\w+)/g;
-let match;
-const hashtags = [];
+// function extract() {
+// const hashtagRegex = /#(\w+)/g;
+// let match;
+// const hashtags = [];
 
-while ((match = hashtagRegex.exec(newTweet.message)) !== null) {
-    hashtags.push(match[0]); 
-}
+// while ((match = hashtagRegex.exec(newTweet.message)) !== null) {
+//     hashtags.push(match[0]); 
+// }
 
-console.log(hashtags)
-}
+// console.log(hashtags)
+// }
 
 
 router.get('/readTweet', (req, res) => {
